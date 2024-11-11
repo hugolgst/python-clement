@@ -7,43 +7,36 @@ from sklearn.metrics import mean_squared_error
 
 import plotly.express as px
 
-CCI = pd.read_csv('data/CCI.csv')
-CCI = CCI[CCI['VALUE'] != "."] # some rows have dots
-CCI['VALUE'] = CCI['VALUE'].astype('float')
-CCI['DATE'] = pd.to_datetime(CCI['DATE']).dt.to_period('M')
-CCI = CCI.groupby('DATE').mean()
+def merge_csvs(country):
+    CCI = pd.read_csv(f'data/CCI_{country}.csv')
+    CCI = CCI[CCI['VALUE'] != "."] # some rows have dots
+    CCI['VALUE'] = CCI['VALUE'].astype('float')
+    CCI['DATE'] = pd.to_datetime(CCI['DATE']).dt.to_period('M')
+    CCI = CCI.groupby('DATE').mean()
 
-CPI = pd.read_csv('data/CPI.csv')
-CPI['VALUE'] = CPI['VALUE'].astype('float')
-CPI['DATE'] = pd.to_datetime(CPI['DATE']).dt.to_period('M')
-CPI = CPI.groupby('DATE').mean()
+    Housing = pd.read_csv(f'data/Housing_{country}.csv')
+    Housing['VALUE'] = Housing['VALUE'].astype('float')
+    Housing['DATE'] = pd.to_datetime(Housing['DATE']).dt.to_period('M')
+    Housing = Housing.groupby('DATE').mean()
 
-Housing = pd.read_csv('data/Housing.csv')
-Housing['VALUE'] = Housing['VALUE'].astype('float')
-Housing['DATE'] = pd.to_datetime(Housing['DATE']).dt.to_period('M')
-Housing = Housing.groupby('DATE').mean()
+    IPI = pd.read_csv(f'data/IndustrialPriceIndex_{country}.csv')
+    IPI['VALUE'] = IPI['VALUE'].astype('float')
+    IPI['DATE'] = pd.to_datetime(IPI['DATE']).dt.to_period('M')
+    IPI = IPI.groupby('DATE').mean()
 
-IPI = pd.read_csv('data/IndustrialPriceIndex.csv')
-IPI['VALUE'] = IPI['VALUE'].astype('float')
-IPI['DATE'] = pd.to_datetime(IPI['DATE']).dt.to_period('M')
-IPI = IPI.groupby('DATE').mean()
+    PMI = pd.read_csv(f'data/PMI_{country}.csv')
+    PMI['VALUE'] = PMI['VALUE'].astype('float')
+    PMI['DATE'] = pd.to_datetime(PMI['DATE']).dt.to_period('M')
+    PMI = PMI.groupby('DATE').mean()
 
-PMI = pd.read_csv('data/PMI.csv')
-PMI['VALUE'] = PMI['VALUE'].astype('float')
-PMI['DATE'] = pd.to_datetime(PMI['DATE']).dt.to_period('M')
-PMI = PMI.groupby('DATE').mean()
+    df = pd.concat(
+        [ CCI, Housing, IPI, PMI ], 
+        axis=1, 
+        join="inner",
+    )
+    df.columns = [ 'CCI', 'Housing', 'IPI', 'PMI' ]
 
-PPI = pd.read_csv('data/PPI.csv')
-PPI['VALUE'] = PPI['VALUE'].astype('float')
-PPI['DATE'] = pd.to_datetime(PPI['DATE']).dt.to_period('M')
-PPI = PPI.groupby('DATE').mean()
-
-df = pd.concat(
-    [ CCI, CPI, Housing, IPI, PMI, PPI ], 
-    axis=1, 
-    join="inner",
-)
-df.columns = [ 'CCI', 'CPI', 'Housing', 'IPI', 'PMI', 'PPI' ]
+    return df
 
 # Compute standard deviation given a column name
 def compute_std_dev(df, column):
@@ -72,7 +65,10 @@ def compute_composite(df):
     return df
 
 
-df = compute_composite(df)
-print(df)
-fig = px.line(df, x=df.index.astype('str'), y="COMPOSITE")
-fig.show()
+def plot_composite(country):
+    df = merge_csvs(country)
+    df = compute_composite(df)
+    fig = px.line(df, x=df.index.astype('str'), y="COMPOSITE")
+    fig.show()
+
+plot_composite('china')
